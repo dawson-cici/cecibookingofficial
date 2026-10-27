@@ -125,7 +125,7 @@ function showDetails(reading, opening, zone) {
         <p class="error" hidden></p>
       </div>
       <div class="sheet-actions">
-        <button class="primary-cta" type="submit">Apartar este horario</button>
+        <button class="primary-cta" type="submit">Continuar al pago</button>
       </div>
     </form>
   `);
@@ -144,7 +144,7 @@ function showDetails(reading, opening, zone) {
     });
     const body = await response.json();
     button.disabled = false;
-    button.textContent = "Apartar este horario";
+    button.textContent = "Continuar al pago";
     if (!body.ok) {
       error.hidden = false;
       error.textContent = body.error === "taken" ? "Ese horario acaba de ocuparse. Elige otro." : "Revisa tu nombre y tu WhatsApp.";
@@ -166,7 +166,7 @@ function showWait(reading) {
         <p class="error" hidden></p>
       </div>
       <div class="sheet-actions">
-        <button class="primary-cta" type="submit">Avisarme cuando haya lugar</button>
+        <button class="primary-cta" type="submit">Enviar solicitud</button>
       </div>
     </form>
   `);
@@ -195,12 +195,13 @@ function showPay(hold) {
     <header><h2>Pago</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
     <form id="pay">
       <div class="sheet-body">
-        <p class="note">Hola, bonita. Tu horario quedó apartado. Para confirmarlo, paga dentro de 1 hora.</p>
+        <p class="note">Hola, bonita. Tu horario quedó apartado por 1 hora. La cita no queda confirmada hasta que Ceci reciba el comprobante.</p>
         <p class="amount">$${hold.mxn} MXN</p>
-        <p class="note">$${hold.usd} USD por PayPal · ${esc(hold.reading)} · ${hold.minutes} min · ${esc(dayIn(hold.at, zone))} ${esc(clockIn(hold.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(hold.at, visitorZone))} en tu hora` : ""}</p>
-        <div class="warn"><strong>Cuidado con las estafas.</strong> Solo paga con los datos de esta página, los mismos del TikTok y WhatsApp de Ceci. Número oficial: 55 7302 2862.</div>
-        <h3>Transferencia</h3>
-        <p class="note">Tarjeta 4152314310559599 · Cecilia Gallardo. En el concepto escribe solo tu nombre completo.</p>
+        <p class="note">${esc(hold.reading)} · ${hold.minutes} min · ${esc(dayIn(hold.at, zone))} · ${esc(clockIn(hold.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(hold.at, visitorZone))} en tu hora` : ""}</p>
+        <p class="note">También puedes pagar $${hold.usd} USD por PayPal.</p>
+        <div class="warn"><strong>Cuidado con las estafas.</strong> Solo son oficiales TikTok @cecitarotart, Instagram @carlagalart y su Facebook. Solo acepto PayPal a ceciliatovarcuenta@gmail.com y transferencia a nombre de Cecilia Gallardo.</div>
+        <h3>Transferencia bancaria</h3>
+        <p class="note">Tarjeta 4152314310559599<br />Beneficiaria: Cecilia Gallardo<br />En el concepto escribe solo tu nombre completo. No agregues palabras como “tarot” o “sesión”.</p>
         <h3>PayPal</h3>
         <p class="note">ceciliatovarcuenta@gmail.com</p>
         <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noreferrer">Abrir PayPal</a>
