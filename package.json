@@ -1,0 +1,10 @@
+{
+  "name": "cecibookingofficial",
+  "private": true,
+  "scripts": {
+    "build:cloudflare": "node -e \"console.log('booking page ready')\""
+  },
+  "dependencies": {
+    "wrangler": "^4.45.0"
+  }
+}
