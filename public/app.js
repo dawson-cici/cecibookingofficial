@@ -31,7 +31,12 @@ function overlaps(start, end, busy) {
   return (busy || []).some((item) => start < item.end && item.start < end);
 }
 function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&", "<": "<", ">": ">", '"': """, "'": "&#39;" }[char]));
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/\x27/g, "&#39;");
 }
 
 readings.innerHTML = READINGS.map((item) => `
