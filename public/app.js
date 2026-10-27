@@ -54,11 +54,13 @@ readings.innerHTML = READINGS.map((item) => `
 function closeSheet() {
   sheet.hidden = true;
   sheet.innerHTML = "";
+  const draft = readDraft();
+  if (draft) saveDraft({ ...draft, open: false });
 }
 
-function openSheet(html) {
+function openSheet(html, large) {
   sheet.hidden = false;
-  sheet.innerHTML = `<button class="book-backdrop" type="button" aria-label="Cerrar"></button><section class="book-sheet" role="dialog">${html}</section>`;
+  sheet.innerHTML = `<button class="book-backdrop" type="button" aria-label="Cerrar"></button><section class="book-sheet${large ? " is-pay" : ""}" role="dialog">${html}</section>`;
   sheet.querySelector(".book-backdrop").onclick = closeSheet;
   sheet.querySelector(".close").onclick = closeSheet;
 }
@@ -110,48 +112,234 @@ function showTimes(reading, times, zone) {
     </div>
   `);
   sheet.querySelectorAll("[data-slot]").forEach((button) => {
-    button.onclick = () => showDetails(reading, { id: button.dataset.slot, at: button.dataset.at }, zone);
+    button.onclick = () => showPay(reading, { id: button.dataset.slot, at: button.dataset.at }, zone);
   });
 }
 
-function showDetails(reading, opening, zone) {
+const DRAFT_KEY = "ceci-pay-draft";
+
+function saveDraft(draft) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() })); } catch {}
+}
+
+function readDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+    if (!draft || Date.now() - Number(draft.savedAt || 0) > 2 * 60 * 60 * 1000) return null;
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
+function openNewWindow(url) {
+  const popup = window.open(url, "_blank", "noopener,noreferrer");
+  if (popup) return true;
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  return false;
+}
+
+function openDedicated(url) {
+  if (/Android/i.test(navigator.userAgent || "")) {
+    const intent = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(url)};end`;
+    if (openNewWindow(intent)) return;
+  }
+  openNewWindow(url);
+}
+
+function personFrom(form) {
+  const name = form.name.value.trim();
+  const phone = form.phone.value.trim();
+  const email = form.email.value.trim();
+  if (name.length < 2 || phone.replace(/[^\d]/g, "").length < 8) return { error: "Revisa tu nombre y tu WhatsApp." };
+  if (email && !email.includes("@")) return { error: "Revisa el correo o déjalo en blanco." };
+  return { name, phone, email };
+}
+
+async function holdSlot(reading, opening, person) {
+  const response = await fetch(API, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      action: "hold",
+      openingId: opening.id,
+      readingId: reading.id,
+      name: person.name,
+      whatsapp: person.phone,
+      email: person.email,
+      timeZone: visitorZone,
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  return response.json();
+}
+
+function showPay(reading, opening, zone) {
+  const when = `${dayIn(opening.at, zone)} a las ${clockIn(opening.at, zone)}`;
   openSheet(`
     <header><h2>${esc(reading.name)}</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
-    <form id="details">
+    <form id="pay">
       <div class="sheet-body">
-        <p class="note">${esc(dayIn(opening.at, zone))} · ${esc(clockIn(opening.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(opening.at, visitorZone))} en tu hora` : ""} · $${reading.mxn} MXN</p>
+        <p class="note">${esc(dayIn(opening.at, zone))} · ${esc(clockIn(opening.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(opening.at, visitorZone))} en tu hora` : ""} · ${reading.minutes} min</p>
         <label>Nombre completo<input name="name" required autocomplete="name" /></label>
-        <label>WhatsApp<input name="phone" required inputmode="tel" placeholder="55 1234 5678" /></label>
+        <label>WhatsApp<input name="phone" required inputmode="tel" autocomplete="tel" placeholder="55 1234 5678" /></label>
+        <label>Correo (opcional)<input name="email" type="email" autocomplete="email" placeholder="tu@correo.com" /></label>
+        <p class="amount">$${reading.mxn} MXN</p>
+        <p class="note">o $${reading.usd} USD por PayPal. El horario queda apartado 1 hora. La cita no se confirma hasta que Ceci reciba el comprobante.</p>
+        <div class="pay-choices">
+          <button class="pay-choice" type="button" data-pay="bank">
+            <span>Transferencia bancaria</span>
+            <strong>$${reading.mxn} MXN</strong>
+          </button>
+          <div class="pay-panel" data-panel="bank" hidden>
+            <p class="note">Tarjeta 4152314310559599<br />Beneficiaria: Cecilia Gallardo<br />En el concepto escribe solo tu nombre completo. No agregues palabras como “tarot” o “sesión”.</p>
+            <label>Captura del pago<input name="proof-bank" type="file" accept="image/*" /></label>
+            <button class="primary-cta" type="submit" data-send="bank">Enviar solicitud de reserva</button>
+          </div>
+          <button class="pay-choice" type="button" data-pay="paypal">
+            <span>PayPal</span>
+            <strong>$${reading.usd} USD</strong>
+          </button>
+          <div class="pay-panel" data-panel="paypal" hidden>
+            <p class="note">ceciliatovarcuenta@gmail.com</p>
+            <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noopener noreferrer">Abrir PayPal</a>
+            <p class="note">Se abre en otra ventana. Lo que escribiste se queda en esta página.</p>
+            <label>Captura del pago<input name="proof-paypal" type="file" accept="image/*" /></label>
+            <button class="primary-cta" type="submit" data-send="paypal">Enviar solicitud de reserva</button>
+          </div>
+        </div>
+        <button class="whatsapp-fallback" id="whatsapp" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 2.2A9.8 9.8 0 0 0 3.5 17.3L2.2 21.8l4.6-1.2A9.8 9.8 0 1 0 12 2.2Z"/><path fill="#fff" d="M16.7 14.4c-.2.6-1.2 1.1-1.7 1.2-.4.1-.9.2-2.6-.5-2.2-.9-3.6-3.1-3.7-3.2-.1-.2-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.5.6 1.6.7 1.7.1.1.1.3 0 .5-.1.2-.2.3-.3.5l-.2.2c-.1.1-.2.2-.1.4.2.3.7 1.2 1.5 1.9.9.8 1.7 1 2 .1.1-.1.3-.2.5-.4.1-.1.3-.1.5 0 .2.1 1.3.6 1.5.7.2.1.3.2.4.3.1.2 0 .6-.2.9Z"/></svg>
+          <span>¿No puedes subir tu comprobante? Envíalo a Ceci por WhatsApp</span>
+        </button>
         <p class="error" hidden></p>
       </div>
-      <div class="sheet-actions">
-        <button class="primary-cta" type="submit">Continuar al pago</button>
-      </div>
     </form>
-  `);
-  sheet.querySelector("#details").onsubmit = async (event) => {
+  `, true);
+  const form = sheet.querySelector("#pay");
+  const error = form.querySelector(".error");
+  const earlier = readDraft();
+  if (earlier && earlier.openingId === opening.id) {
+    form.name.value = earlier.name || "";
+    form.phone.value = earlier.phone || "";
+    form.email.value = earlier.email || "";
+  }
+  const remember = () => saveDraft({
+    open: true,
+    readingId: reading.id,
+    openingId: opening.id,
+    at: opening.at,
+    zone,
+    name: form.name.value,
+    phone: form.phone.value,
+    email: form.email.value,
+  });
+  remember();
+  form.addEventListener("input", remember);
+  form.querySelector(".paypal").onclick = (event) => {
     event.preventDefault();
-    const form = event.currentTarget;
-    const button = form.querySelector("[type=submit]");
-    const error = form.querySelector(".error");
-    button.disabled = true;
-    button.textContent = "Apartando…";
+    remember();
+    openDedicated("https://www.paypal.com/paypalme/ceciliatovarcuenta");
+  };
+  form.querySelectorAll(".pay-choice").forEach((choice) => {
+    choice.onclick = () => {
+      const panel = form.querySelector(`[data-panel="${choice.dataset.pay}"]`);
+      const willOpen = panel.hidden;
+      form.querySelectorAll(".pay-panel").forEach((item) => { item.hidden = true; });
+      form.querySelectorAll(".pay-choice").forEach((item) => item.classList.remove("is-open"));
+      panel.hidden = !willOpen;
+      choice.classList.toggle("is-open", willOpen);
+    };
+  });
+  const sendProof = async (which, button) => {
+    const person = personFrom(form);
+    const file = form.querySelector(`[name="proof-${which}"]`).files[0];
     error.hidden = true;
-    const response = await fetch(API, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "hold", openingId: opening.id, readingId: reading.id, name: form.name.value, whatsapp: form.phone.value, timeZone: visitorZone }),
-    });
-    const body = await response.json();
-    button.disabled = false;
-    button.textContent = "Continuar al pago";
-    if (!body.ok) {
+    if (person.error) {
       error.hidden = false;
-      error.textContent = body.error === "taken" ? "Ese horario acaba de ocuparse. Elige otro." : "Revisa tu nombre y tu WhatsApp.";
-      if (body.error === "taken") void choose(reading.id);
+      error.textContent = person.error;
       return;
     }
-    showPay(body);
+    if (!file) {
+      error.hidden = false;
+      error.textContent = "Por favor sube el comprobante de pago.";
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "Enviando…";
+    try {
+      const hold = await holdSlot(reading, opening, person);
+      if (!hold.ok) {
+        error.hidden = false;
+        error.textContent = hold.error === "taken" ? "Ese horario acaba de ocuparse. Elige otro." : "No se pudo apartar el horario. Inténtalo de nuevo.";
+        if (hold.error === "taken") void choose(reading.id);
+        return;
+      }
+      const data = new FormData();
+      data.set("id", hold.id);
+      data.set("proof", file);
+      const response = await fetch(API, { method: "POST", body: data });
+      if (!response.ok) throw new Error("proof");
+      clearDraft();
+      openSheet(`<header><h2>Gracias</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="thanks">Gracias por enviar tu solicitud de lectura con ❤️‍🔥</p>`, true);
+    } catch {
+      error.hidden = false;
+      error.textContent = "No se pudo enviar la captura. Inténtalo de nuevo.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Enviar solicitud de reserva";
+    }
+  };
+  form.querySelectorAll("[data-send]").forEach((button) => {
+    button.onclick = (event) => {
+      event.preventDefault();
+      void sendProof(button.dataset.send, button);
+    };
+  });
+  sheet.querySelector("#whatsapp").onclick = async () => {
+    const person = personFrom(form);
+    const button = sheet.querySelector("#whatsapp");
+    error.hidden = true;
+    if (person.error) {
+      error.hidden = false;
+      error.textContent = person.error;
+      return;
+    }
+    button.disabled = true;
+    try {
+      const hold = await holdSlot(reading, opening, person);
+      if (!hold.ok) {
+        error.hidden = false;
+        error.textContent = hold.error === "taken" ? "Ese horario acaba de ocuparse. Elige otro." : "No se pudo registrar la reserva. Inténtalo de nuevo.";
+        if (hold.error === "taken") void choose(reading.id);
+        button.disabled = false;
+        return;
+      }
+      const marked = await fetch(API, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "whatsapp", id: hold.id }),
+      });
+      if (!marked.ok) throw new Error("whatsapp");
+      clearDraft();
+      const text = encodeURIComponent(`Hola Ceci! Te mando el comprobante de pago de mi solicitud de reserva del ${when}.`);
+      openNewWindow(`https://wa.me/${CECI}?text=${text}`);
+      openSheet(`<header><h2>Reserva registrada</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="note">Tu reserva quedó registrada. Envía el comprobante en el chat de WhatsApp que se abrió.</p>`, true);
+    } catch {
+      error.hidden = false;
+      error.textContent = "No se pudo registrar la reserva. Inténtalo de nuevo.";
+      button.disabled = false;
+    }
   };
 }
 
@@ -189,60 +377,54 @@ function showWait(reading) {
   };
 }
 
-function showPay(hold) {
-  const zone = hold.timeZone || "America/Mexico_City";
-  openSheet(`
-    <header><h2>Pago</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
-    <form id="pay">
-      <div class="sheet-body">
-        <p class="note">Hola, bonita. Tu horario quedó apartado por 1 hora. La cita no queda confirmada hasta que Ceci reciba el comprobante.</p>
-        <p class="amount">$${hold.mxn} MXN</p>
-        <p class="note">${esc(hold.reading)} · ${hold.minutes} min · ${esc(dayIn(hold.at, zone))} · ${esc(clockIn(hold.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(hold.at, visitorZone))} en tu hora` : ""}</p>
-        <p class="note">También puedes pagar $${hold.usd} USD por PayPal.</p>
-        <div class="warn"><strong>Cuidado con las estafas.</strong> Solo son oficiales TikTok @cecitarotart, Instagram @carlagalart y su Facebook. Solo acepto PayPal a ceciliatovarcuenta@gmail.com y transferencia a nombre de Cecilia Gallardo.</div>
-        <h3>Transferencia bancaria</h3>
-        <p class="note">Tarjeta 4152314310559599<br />Beneficiaria: Cecilia Gallardo<br />En el concepto escribe solo tu nombre completo. No agregues palabras como “tarot” o “sesión”.</p>
-        <h3>PayPal</h3>
-        <p class="note">ceciliatovarcuenta@gmail.com</p>
-        <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noreferrer">Abrir PayPal</a>
-        <label>Captura del pago<input name="proof" type="file" accept="image/*" required /></label>
-        <p class="error" hidden></p>
-      </div>
-      <div class="sheet-actions">
-        <button class="primary-cta" type="submit">Enviar comprobante</button>
-        <button class="primary-cta" id="whatsapp" type="button" style="background:#1f7a4d">Enviar por WhatsApp</button>
-      </div>
-    </form>
-  `);
-  sheet.querySelector("#pay").onsubmit = async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const file = form.proof.files[0];
-    const error = form.querySelector(".error");
-    if (!file) {
-      error.hidden = false;
-      error.textContent = "Sube la captura de tu pago.";
-      return;
-    }
-    const data = new FormData();
-    data.set("id", hold.id);
-    data.set("proof", file);
-    const button = form.querySelector("[type=submit]");
-    button.disabled = true;
-    button.textContent = "Enviando…";
-    const response = await fetch(API, { method: "POST", body: data });
-    if (!response.ok) {
-      button.disabled = false;
-      button.textContent = "Enviar comprobante";
-      error.hidden = false;
-      error.textContent = "No se pudo enviar la captura. Inténtalo de nuevo o mándala por WhatsApp.";
-      return;
-    }
-    openSheet(`<header><h2>Pago</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="note">Recibí tu comprobante. Ceci lo revisa y te confirma por WhatsApp.</p>`);
-  };
-  sheet.querySelector("#whatsapp").onclick = async () => {
-    await fetch(API, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "whatsapp", id: hold.id }) });
-    const text = encodeURIComponent(`Hola Ceci, te envío el comprobante de pago de mi ${hold.reading} del ${dayIn(hold.at, zone)} a las ${clockIn(hold.at, zone)}.`);
-    window.location.href = `https://wa.me/${CECI}?text=${text}`;
-  };
+function restoreDraft() {
+  const draft = readDraft();
+  if (!draft?.open) return;
+  const reading = READINGS.find((item) => item.id === draft.readingId);
+  if (!reading || !draft.openingId || !draft.at) return;
+  showPay(reading, { id: draft.openingId, at: draft.at }, draft.zone || "America/Mexico_City");
 }
+
+function inAppBrowser() {
+  const ua = navigator.userAgent || "";
+  return /Instagram|FBAN|FBAV|FB_IAB|FBIOS|TikTok|musical_ly|Bytedance|ByteLocale|WhatsApp|Line\/|Snapchat/i.test(ua);
+}
+
+function bookingIntentUrl() {
+  const current = location.href.split("#")[0];
+  return `intent://${current.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(current)};end`;
+}
+
+function showBrowserGate() {
+  if (!inAppBrowser()) return;
+  const page = document.querySelector(".book-page");
+  if (!page || page.querySelector(".browser-gate")) return;
+  const android = /Android/i.test(navigator.userAgent || "");
+  const gate = document.createElement("section");
+  gate.className = "browser-gate";
+  gate.innerHTML = android
+    ? `<p class="label">Ábrela en Chrome</p><p>Si entras desde TikTok, Instagram o WhatsApp, esta página puede cerrarse cuando vayas a pagar. Ábrela en Chrome para no perder la reserva.</p><button class="primary-cta" type="button">Abrir en Chrome</button>`
+    : `<p class="label">Ábrela en Safari</p><p>Si entras desde TikTok, Instagram o WhatsApp, esta página puede cerrarse cuando vayas a pagar. Toca el menú del navegador y elige <strong>Abrir en Safari</strong>.</p><button class="primary-cta" type="button">Copiar enlace</button>`;
+  page.prepend(gate);
+  gate.querySelector("button").onclick = async () => {
+    if (android) {
+      location.href = bookingIntentUrl();
+      return;
+    }
+    const button = gate.querySelector("button");
+    try {
+      await navigator.clipboard.writeText(location.href.split("#")[0]);
+      button.textContent = "Enlace copiado";
+    } catch {
+      button.textContent = "No se pudo copiar";
+    }
+  };
+  if (android && !sessionStorage.getItem("ceci-browser-hop")) {
+    sessionStorage.setItem("ceci-browser-hop", "1");
+    location.href = bookingIntentUrl();
+  }
+}
+
+showBrowserGate();
+restoreDraft();
+

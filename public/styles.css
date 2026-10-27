@@ -24,7 +24,33 @@
   font: inherit;
 }
 
-.book-page .main-photo {
+.book-page .browser-gate {
+  margin-bottom: 14px;
+  padding: 14px;
+  border-radius: 22px;
+  background: #fff6e8;
+  border: 1px solid rgba(140, 90, 30, 0.18);
+  color: #3d2a22;
+}
+
+.book-page .browser-gate .label {
+  margin: 0 0 6px;
+  color: #8a4b16;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.book-page .browser-gate p {
+  margin: 0;
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.book-page .browser-gate .primary-cta {
+  margin-top: 12px;
+}
   display: block;
   width: 52%;
   margin: 0 auto;
@@ -336,6 +362,87 @@
   background: rgba(47, 36, 40, 0.46);
 }
 
+.book-sheet.is-pay {
+  top: 0;
+  width: min(640px, 100%);
+  height: 100dvh;
+  max-height: 100dvh;
+  transform: translateX(-50%);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.book-sheet .pay-choices {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.book-sheet .pay-choice {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(94, 60, 72, 0.18);
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-sheet .pay-choice span {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.book-sheet .pay-choice strong {
+  font-size: 1.05rem;
+  color: #5e3c48;
+}
+
+.book-sheet .pay-choice.is-open {
+  border-color: #5e3c48;
+  background: #f8efec;
+  border-radius: 16px 16px 0 0;
+}
+
+.book-sheet .pay-panel {
+  margin-top: -10px;
+  padding: 4px 14px 14px;
+  border: 1px solid #5e3c48;
+  border-top: 0;
+  border-radius: 0 0 16px 16px;
+  background: #fffaf9;
+}
+
+.book-sheet .pay-panel .primary-cta {
+  margin-top: 14px;
+}
+
+.book-sheet .whatsapp-fallback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 18px 0 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6f5d63;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-sheet .whatsapp-fallback svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
 .book-sheet {
   --accent: #8c6a76;
   --accent-deep: #5e3c48;
@@ -442,6 +549,14 @@
   color: #2f2428;
 }
 
+.book-sheet .thanks {
+  margin: 28px 0 12px;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #2f2428;
+}
+
 .book-sheet .amount {
   margin: 8px 0 0;
   font-size: 1.7rem;
@@ -450,6 +565,7 @@
 
 .book-sheet .paypal {
   display: block;
+  width: 100%;
   margin-top: 8px;
   text-align: center;
   background: #0070ba;
@@ -458,6 +574,7 @@
   border-radius: 12px;
   padding: 12px;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .book-sheet .error {
