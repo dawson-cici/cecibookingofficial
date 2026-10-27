@@ -188,10 +188,32 @@
   border: 0;
   border-radius: 14px;
   padding: 14px 16px;
-  background: linear-gradient(135deg, var(--accent-deep), var(--accent));
+  background: linear-gradient(135deg, #5e3c48, #8c6a76);
   color: white;
   font-weight: 700;
   cursor: pointer;
+}
+
+.book-sheet form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.book-sheet .sheet-body {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.book-sheet .sheet-actions {
+  flex: none;
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  background: #fffaf9;
 }
 
 .book-page .testimonials {
@@ -267,18 +289,22 @@
 }
 
 .book-sheet {
+  --accent: #8c6a76;
+  --accent-deep: #5e3c48;
   position: fixed;
   z-index: 70;
   left: 50%;
   bottom: 0;
+  display: flex;
+  flex-direction: column;
   width: min(430px, 100%);
-  max-height: min(88dvh, 760px);
+  max-height: min(92dvh, 760px);
   transform: translateX(-50%);
-  overflow: auto;
+  overflow: hidden;
   border-radius: 24px 24px 0 0;
   background: #fffaf9;
   color: #2f2428;
-  padding: 14px 16px calc(20px + env(safe-area-inset-bottom));
+  padding: 14px 16px calc(12px + env(safe-area-inset-bottom));
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -287,6 +313,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex: none;
+}
+
+.book-sheet > .sheet-body {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
 }
 
 .book-sheet h2 {

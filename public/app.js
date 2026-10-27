@@ -100,12 +100,14 @@ function showTimes(reading, times, zone) {
   }
   openSheet(`
     <header><h2>${esc(reading.name)}</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
+    <div class="sheet-body">
     <p class="note">Elige un horario. La hora de arriba es la de ${esc(cityName(zone))}. El lugar se aparta 1 hora mientras pagas.</p>
     ${groups.map((group) => `<p class="day">${esc(group.day)}</p>${group.items.map((item) => `
       <button class="slot" type="button" data-slot="${esc(item.id)}" data-at="${esc(item.at)}">
         <span>${esc(clockIn(item.at, zone))}<small style="display:block;font-weight:500;font-size:.75rem">hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(item.at, visitorZone))} en tu hora` : ""}</small></span>
         <span>Elegir</span>
       </button>`).join("")}`).join("")}
+    </div>
   `);
   sheet.querySelectorAll("[data-slot]").forEach((button) => {
     button.onclick = () => showDetails(reading, { id: button.dataset.slot, at: button.dataset.at }, zone);
@@ -116,17 +118,21 @@ function showDetails(reading, opening, zone) {
   openSheet(`
     <header><h2>${esc(reading.name)}</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
     <form id="details">
-      <p class="note">${esc(dayIn(opening.at, zone))} · ${esc(clockIn(opening.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(opening.at, visitorZone))} en tu hora` : ""} · $${reading.mxn} MXN</p>
-      <label>Nombre completo<input name="name" required autocomplete="name" /></label>
-      <label>WhatsApp<input name="phone" required inputmode="tel" placeholder="55 1234 5678" /></label>
-      <p class="error" hidden></p>
-      <button class="primary-cta" type="submit" style="margin-top:16px">Apartar este horario</button>
+      <div class="sheet-body">
+        <p class="note">${esc(dayIn(opening.at, zone))} · ${esc(clockIn(opening.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(opening.at, visitorZone))} en tu hora` : ""} · $${reading.mxn} MXN</p>
+        <label>Nombre completo<input name="name" required autocomplete="name" /></label>
+        <label>WhatsApp<input name="phone" required inputmode="tel" placeholder="55 1234 5678" /></label>
+        <p class="error" hidden></p>
+      </div>
+      <div class="sheet-actions">
+        <button class="primary-cta" type="submit">Apartar este horario</button>
+      </div>
     </form>
   `);
   sheet.querySelector("#details").onsubmit = async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const button = form.querySelector("button");
+    const button = form.querySelector("[type=submit]");
     const error = form.querySelector(".error");
     button.disabled = true;
     button.textContent = "Apartando…";
@@ -153,11 +159,15 @@ function showWait(reading) {
   openSheet(`
     <header><h2>Lista de espera</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
     <form id="wait">
-      <p class="note">Ahora no hay horarios abiertos para esta lectura. Déjame tu WhatsApp y Ceci te escribe cuando se abra un lugar.</p>
-      <label>Nombre completo<input name="name" required autocomplete="name" /></label>
-      <label>WhatsApp<input name="phone" required inputmode="tel" placeholder="55 1234 5678" /></label>
-      <p class="error" hidden></p>
-      <button class="primary-cta" type="submit" style="margin-top:16px">Avisarme cuando haya lugar</button>
+      <div class="sheet-body">
+        <p class="note">Ahora no hay horarios abiertos para esta lectura. Déjame tu WhatsApp y Ceci te escribe cuando se abra un lugar.</p>
+        <label>Nombre completo<input name="name" required autocomplete="name" /></label>
+        <label>WhatsApp<input name="phone" required inputmode="tel" placeholder="55 1234 5678" /></label>
+        <p class="error" hidden></p>
+      </div>
+      <div class="sheet-actions">
+        <button class="primary-cta" type="submit">Avisarme cuando haya lugar</button>
+      </div>
     </form>
   `);
   sheet.querySelector("#wait").onsubmit = async (event) => {
@@ -184,19 +194,23 @@ function showPay(hold) {
   openSheet(`
     <header><h2>Pago</h2><button class="close" type="button" aria-label="Cerrar">×</button></header>
     <form id="pay">
-      <p class="note">Hola, bonita. Tu horario quedó apartado. Para confirmarlo, paga dentro de 1 hora.</p>
-      <p class="amount">$${hold.mxn} MXN</p>
-      <p class="note">$${hold.usd} USD por PayPal · ${esc(hold.reading)} · ${hold.minutes} min · ${esc(dayIn(hold.at, zone))} ${esc(clockIn(hold.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(hold.at, visitorZone))} en tu hora` : ""}</p>
-      <div class="warn"><strong>Cuidado con las estafas.</strong> Solo paga con los datos de esta página, los mismos del TikTok y WhatsApp de Ceci. Número oficial: 55 7302 2862.</div>
-      <h3>Transferencia</h3>
-      <p class="note">Tarjeta 4152314310559599 · Cecilia Gallardo. En el concepto escribe solo tu nombre completo.</p>
-      <h3>PayPal</h3>
-      <p class="note">ceciliatovarcuenta@gmail.com</p>
-      <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noreferrer">Abrir PayPal</a>
-      <label>Captura del pago<input name="proof" type="file" accept="image/*" required /></label>
-      <p class="error" hidden></p>
-      <button class="primary-cta" type="submit" style="margin-top:16px">Enviar comprobante</button>
-      <button class="primary-cta" id="whatsapp" type="button" style="margin-top:8px;background:#1f7a4d">Enviar por WhatsApp</button>
+      <div class="sheet-body">
+        <p class="note">Hola, bonita. Tu horario quedó apartado. Para confirmarlo, paga dentro de 1 hora.</p>
+        <p class="amount">$${hold.mxn} MXN</p>
+        <p class="note">$${hold.usd} USD por PayPal · ${esc(hold.reading)} · ${hold.minutes} min · ${esc(dayIn(hold.at, zone))} ${esc(clockIn(hold.at, zone))} hora de ${esc(cityName(zone))}${visitorZone !== zone ? ` · ${esc(clockIn(hold.at, visitorZone))} en tu hora` : ""}</p>
+        <div class="warn"><strong>Cuidado con las estafas.</strong> Solo paga con los datos de esta página, los mismos del TikTok y WhatsApp de Ceci. Número oficial: 55 7302 2862.</div>
+        <h3>Transferencia</h3>
+        <p class="note">Tarjeta 4152314310559599 · Cecilia Gallardo. En el concepto escribe solo tu nombre completo.</p>
+        <h3>PayPal</h3>
+        <p class="note">ceciliatovarcuenta@gmail.com</p>
+        <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noreferrer">Abrir PayPal</a>
+        <label>Captura del pago<input name="proof" type="file" accept="image/*" required /></label>
+        <p class="error" hidden></p>
+      </div>
+      <div class="sheet-actions">
+        <button class="primary-cta" type="submit">Enviar comprobante</button>
+        <button class="primary-cta" id="whatsapp" type="button" style="background:#1f7a4d">Enviar por WhatsApp</button>
+      </div>
     </form>
   `);
   sheet.querySelector("#pay").onsubmit = async (event) => {
