@@ -51,14 +51,40 @@ readings.innerHTML = READINGS.map((item) => `
   </article>
 `).join("");
 
+let lockedScroll = 0;
+
+function lockPage() {
+  if (document.body.dataset.locked === "1") return;
+  lockedScroll = window.scrollY || 0;
+  document.body.dataset.locked = "1";
+  document.body.style.position = "fixed";
+  document.body.style.top = `-${lockedScroll}px`;
+  document.body.style.left = "0";
+  document.body.style.right = "0";
+  document.body.style.width = "100%";
+}
+
+function unlockPage() {
+  if (document.body.dataset.locked !== "1") return;
+  document.body.dataset.locked = "";
+  document.body.style.position = "";
+  document.body.style.top = "";
+  document.body.style.left = "";
+  document.body.style.right = "";
+  document.body.style.width = "";
+  window.scrollTo(0, lockedScroll);
+}
+
 function closeSheet() {
   sheet.hidden = true;
   sheet.innerHTML = "";
+  unlockPage();
   const draft = readDraft();
   if (draft) saveDraft({ ...draft, open: false });
 }
 
 function openSheet(html, large) {
+  lockPage();
   sheet.hidden = false;
   sheet.innerHTML = `<button class="book-backdrop" type="button" aria-label="Cerrar"></button><section class="book-sheet${large ? " is-pay" : ""}" role="dialog">${html}</section>`;
   sheet.querySelector(".book-backdrop").onclick = closeSheet;
@@ -184,6 +210,20 @@ async function holdSlot(reading, opening, person) {
   return response.json();
 }
 
+function thanksView(message) {
+  return `<header class="thanks-bar"><button class="close" type="button" aria-label="Cerrar">×</button></header>
+    <div class="thanks-screen">
+      <p class="thanks">${message}</p>
+      <div class="social-row">
+        <a href="https://wa.me/525573022862" target="_blank" rel="noreferrer" aria-label="WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#25D366" d="M12 2.2A9.8 9.8 0 0 0 3.5 17.3L2.2 21.8l4.6-1.2A9.8 9.8 0 1 0 12 2.2Z"/><path fill="#fff" d="M16.7 14.4c-.2.6-1.2 1.1-1.7 1.2-.4.1-.9.2-2.6-.5-2.2-.9-3.6-3.1-3.7-3.2-.1-.2-.9-1.2-.9-2.3s.6-1.6.8-1.8c.2-.2.4-.3.6-.3h.4c.1 0 .3 0 .5.4.2.5.6 1.6.7 1.7.1.1.1.3 0 .5-.1.2-.2.3-.3.5l-.2.2c-.1.1-.2.2-.1.4.2.3.7 1.2 1.5 1.9.9.8 1.7 1 2 .1.1-.1.3-.2.5-.4.1-.1.3-.1.5 0 .2.1 1.3.6 1.5.7.2.1.3.2.4.3.1.2 0 .6-.2.9Z"/></svg></a>
+        <a href="https://www.tiktok.com/@cecitarotart" target="_blank" rel="noreferrer" aria-label="TikTok"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#111" d="M14.5 3c.4 2.4 1.8 4.1 4.1 4.4v2.3c-1.4 0-2.7-.4-4-1.2v5.7c0 3.4-2.6 6.3-6.2 6.3S2.4 17.6 2.4 14.2c0-3.3 2.5-5.9 5.8-6.2v2.5c-1.6.3-2.8 1.7-2.8 3.4 0 1.9 1.5 3.4 3.4 3.4s3.3-1.5 3.3-3.5V3h2.4Z"/><path fill="#25F4EE" d="M13.8 3.4c.4 2.2 1.7 3.8 3.8 4.1v2c-1.3-.1-2.5-.5-3.6-1.2v5.4c0 3.1-2.4 5.7-5.6 5.7-1.1 0-2.2-.3-3.1-.9 1 .9 2.3 1.4 3.7 1.4 3.2 0 5.6-2.6 5.6-5.7V8.3c1.1.7 2.3 1.1 3.6 1.2V7.5c-2-.3-3.4-1.9-3.8-4.1h-.6Z"/><path fill="#FE2C55" d="M15.2 3c.3 2 1.5 3.5 3.4 3.9v1.8c-1.2-.1-2.3-.5-3.3-1.1v5.2c0 2.9-2.2 5.3-5.2 5.3-1.3 0-2.5-.5-3.4-1.3.9 1.2 2.3 2 3.9 2 3 0 5.2-2.4 5.2-5.3V6.6c1 .6 2.1 1 3.3 1.1V6.9C17.2 6.6 16 5.2 15.6 3.4h-.4V3Z"/></svg></a>
+        <a href="https://www.instagram.com/carlagalart/" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="ig-thanks" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#FEDA75"/><stop offset=".5" stop-color="#D62976"/><stop offset="1" stop-color="#4F5BD5"/></linearGradient></defs><rect width="20" height="20" x="2" y="2" rx="6" fill="url(#ig-thanks)"/><rect width="12" height="12" x="6" y="6" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.1" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.6" cy="7.4" r="1" fill="#fff"/></svg></a>
+        <a href="https://www.facebook.com/profile.php?id=61595580958432" target="_blank" rel="noreferrer" aria-label="Facebook"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877F2" d="M14.2 21v-7.2h2.4l.4-2.8h-2.8V9.3c0-.8.2-1.4 1.4-1.4H17V5.4c-.3 0-1.1-.1-2.1-.1-2.1 0-3.5 1.3-3.5 3.6v2.1H8.8v2.8h2.6V21h2.8Z"/></svg></a>
+      </div>
+      <p class="thanks-note">Sígueme en mis redes 🔥❤️</p>
+    </div>`;
+}
+
 function showPay(reading, opening, zone) {
   const when = `${dayIn(opening.at, zone)} a las ${clockIn(opening.at, zone)}`;
   openSheet(`
@@ -202,7 +242,8 @@ function showPay(reading, opening, zone) {
             <strong>$${reading.mxn} MXN</strong>
           </button>
           <div class="pay-panel" data-panel="bank" hidden>
-            <p class="note">Tarjeta 4152314310559599<br />Beneficiaria: Cecilia Gallardo<br />En el concepto escribe solo tu nombre completo. No agregues palabras como “tarot” o “sesión”.</p>
+            <p class="note">Tarjeta <strong class="card-no">4152 3143 1055 9599</strong><br />Beneficiaria: <strong>Cecilia Gallardo</strong></p>
+            <p class="pay-rule">En el concepto escribe solo tu nombre completo. No agregues palabras como “tarot” o “sesión”.</p>
             <label>Captura del pago<input name="proof-bank" type="file" accept="image/*" /></label>
             <button class="primary-cta" type="submit" data-send="bank">Enviar solicitud de reserva</button>
           </div>
@@ -211,7 +252,7 @@ function showPay(reading, opening, zone) {
             <strong>$${reading.usd} USD</strong>
           </button>
           <div class="pay-panel" data-panel="paypal" hidden>
-            <p class="note">ceciliatovarcuenta@gmail.com</p>
+            <p class="note">PayPal: <strong>ceciliatovarcuenta@gmail.com</strong></p>
             <a class="paypal" href="https://www.paypal.com/paypalme/ceciliatovarcuenta" target="_blank" rel="noopener noreferrer">Abrir PayPal</a>
             <p class="note">Se abre en otra ventana. Lo que escribiste se queda en esta página.</p>
             <label>Captura del pago<input name="proof-paypal" type="file" accept="image/*" /></label>
@@ -291,7 +332,7 @@ function showPay(reading, opening, zone) {
       const response = await fetch(API, { method: "POST", body: data });
       if (!response.ok) throw new Error("proof");
       clearDraft();
-      openSheet(`<header><h2>Gracias</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="thanks">Gracias por enviar tu solicitud de lectura con ❤️‍🔥</p>`, true);
+      openSheet(thanksView("Gracias por enviar tu solicitud de lectura con ❤️‍🔥"), true);
     } catch {
       error.hidden = false;
       error.textContent = "No se pudo enviar la captura. Inténtalo de nuevo.";
@@ -334,7 +375,7 @@ function showPay(reading, opening, zone) {
       clearDraft();
       const text = encodeURIComponent(`Hola Ceci! Te mando el comprobante de pago de mi solicitud de reserva del ${when}.`);
       openNewWindow(`https://wa.me/${CECI}?text=${text}`);
-      openSheet(`<header><h2>Reserva registrada</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="note">Tu reserva quedó registrada. Envía el comprobante en el chat de WhatsApp que se abrió.</p>`, true);
+      openSheet(thanksView("Tu reserva quedó registrada. Envía el comprobante en el chat de WhatsApp que se abrió."), true);
     } catch {
       error.hidden = false;
       error.textContent = "No se pudo registrar la reserva. Inténtalo de nuevo.";
