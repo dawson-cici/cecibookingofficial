@@ -332,7 +332,7 @@ function showPay(reading, opening, zone) {
       const response = await fetch(API, { method: "POST", body: data });
       if (!response.ok) throw new Error("proof");
       clearDraft();
-      openSheet(thanksView("Gracias por enviar tu solicitud de lectura con ❤️‍🔥"), true);
+      openSheet(thanksView("Gracias por enviar tu solicitud de lectura ❤️‍🔥"), true);
     } catch {
       error.hidden = false;
       error.textContent = "No se pudo enviar la captura. Inténtalo de nuevo.";
@@ -414,7 +414,7 @@ function showWait(reading) {
       error.textContent = "Revisa tu nombre y tu WhatsApp.";
       return;
     }
-    openSheet(`<header><h2>Lista de espera</h2><button class="close" type="button" aria-label="Cerrar">×</button></header><p class="note">Listo. Ceci te escribe por WhatsApp cuando se abra un lugar.</p>`);
+    openSheet(thanksView("Listo. Ceci te escribe por WhatsApp cuando se abra un lugar."), true);
   };
 }
 
