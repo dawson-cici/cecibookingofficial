@@ -51,8 +51,11 @@
 .book-page .browser-gate .primary-cta {
   margin-top: 12px;
 }
+
+.book-page .main-photo {
   display: block;
   width: 52%;
+  max-width: 210px;
   margin: 0 auto;
   height: auto;
   border-radius: 28px;
@@ -372,6 +375,22 @@
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(47, 36, 40, 0.22);
   padding: 18px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+}
+
+.book-sheet.is-pay form {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.book-sheet.is-pay .sheet-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .book-sheet .pay-choices {
